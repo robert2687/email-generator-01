@@ -1,0 +1,7 @@
+{
+  "name": "Professional Email Generator",
+  "description": "An AI-powered application to generate highly personalized and effective emails for various professional purposes. Features include customizable templates, subject line optimization, and content generation.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
