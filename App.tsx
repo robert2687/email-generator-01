@@ -4,14 +4,16 @@ import { EmailEditor, EmailEditorHandles } from './components/EmailEditor';
 import { GeneratedEmail } from './components/GeneratedEmail';
 import { Header } from './components/Header';
 import { VoiceComposer } from './components/VoiceComposer';
-import type { GeneratedEmailContent, EmailRequestData, EmailStyle, EmailTemplate } from './types';
-import { generateEmail } from './services/geminiService';
+import type { GeneratedEmailContent, EmailRequestData, EmailStyle, EmailTemplate, EmailScanResult } from './types';
+import { generateEmail, scanEmail } from './services/geminiService';
 import { Icon } from './components/Icon';
 import { AuthPage } from './components/auth/AuthPage';
 import { HistoryPanel } from './components/HistoryPanel';
 import { TemplatesPanel } from './components/TemplatesPanel';
+import { EmailScanner } from './components/EmailScanner';
+import { ScanResult } from './components/ScanResult';
 
-type AppMode = 'text' | 'voice';
+type AppMode = 'text' | 'voice' | 'scanner';
 
 const defaultTemplates: EmailTemplate[] = [
   { id: 'default-1', name: 'Team Thank You', prompt: 'Write a thank you email to my team for their hard work on [Project Name]. Mention their dedication and the successful outcome.' },
@@ -23,6 +25,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mode, setMode] = useState<AppMode>('text');
   const [generatedEmails, setGeneratedEmails] = useState<GeneratedEmailContent[] | null>(null);
+  const [scanResult, setScanResult] = useState<EmailScanResult[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<EmailRequestData | null>(null);
@@ -80,6 +83,7 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
     // Reset app state on sign out
     setGeneratedEmails(null);
+    setScanResult(null);
     setError(null);
     setLastRequest(null);
     setMode('text');
@@ -105,6 +109,21 @@ const App: React.FC = () => {
     }
   }, []);
   
+  const handleScanEmail = useCallback(async (subject: string, body: string) => {
+    setIsLoading(true);
+    setError(null);
+    setScanResult(null);
+    try {
+      const result = await scanEmail(subject, body);
+      setScanResult(result);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to scan email. Please check the content and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const handleRegenerateWithStyle = useCallback(async (newStyle: EmailStyle) => {
       if (!lastRequest) return;
       // Use the last prompt and search setting, but with the new style
@@ -116,12 +135,21 @@ const App: React.FC = () => {
     setMode('text'); // Switch back to text view to see the result
   }, []);
 
-
   const handleNewEmail = useCallback(() => {
     setGeneratedEmails(null);
     setError(null);
     setLastRequest(null);
     emailEditorRef.current?.reset();
+  }, []);
+
+  const handleNewScan = useCallback(() => {
+    setScanResult(null);
+    setError(null);
+  }, []);
+
+  const handleLoadReplyInEditor = useCallback((reply: GeneratedEmailContent) => {
+    setGeneratedEmails([reply]);
+    setMode('text');
   }, []);
 
   const handleSaveToHistory = (email: GeneratedEmailContent) => {
@@ -135,6 +163,7 @@ const App: React.FC = () => {
 
   const handleLoadFromHistory = (email: GeneratedEmailContent) => {
     setGeneratedEmails([email]); // Wrap in array to display it
+    setMode('text');
     setIsHistoryPanelOpen(false);
   };
   
@@ -159,7 +188,6 @@ const App: React.FC = () => {
     emailEditorRef.current?.setPrompt(template.prompt);
     setIsTemplatesPanelOpen(false);
   };
-
 
   const getModeButtonClass = (buttonMode: AppMode) => {
     const baseClasses = "px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800";
@@ -206,6 +234,11 @@ const App: React.FC = () => {
                   <Icon name="sparkles" className="h-4 w-4" /> Text
                 </span>
               </button>
+              <button onClick={() => setMode('scanner')} className={getModeButtonClass('scanner')}>
+                <span className="flex items-center gap-2">
+                  <Icon name="scan" className="h-4 w-4" /> Scanner
+                </span>
+              </button>
               <button onClick={() => setMode('voice')} className={getModeButtonClass('voice')}>
                  <span className="flex items-center gap-2">
                    <Icon name="microphone" className="h-4 w-4" /> Voice
@@ -214,7 +247,7 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          {mode === 'text' ? (
+          {mode === 'text' && (
             <>
               <EmailEditor 
                 ref={emailEditorRef} 
@@ -233,7 +266,22 @@ const App: React.FC = () => {
                 currentStyle={lastRequest?.style}
               />
             </>
-          ) : (
+          )}
+
+          {mode === 'scanner' && (
+            <>
+              <EmailScanner onScan={handleScanEmail} isLoading={isLoading} />
+              <ScanResult
+                results={scanResult}
+                isLoading={isLoading}
+                error={error}
+                onReset={handleNewScan}
+                onEditReply={handleLoadReplyInEditor}
+              />
+            </>
+          )}
+          
+          {mode === 'voice' && (
             <VoiceComposer onEmailGenerated={handleEmailGeneratedFromVoice} />
           )}
 

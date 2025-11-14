@@ -28,3 +28,10 @@ export interface EmailTemplate {
   name: string;
   prompt: string;
 }
+
+export interface EmailScanResult {
+  summary: string;
+  intent: 'Confirmation' | 'Rejection' | 'Question' | 'Scheduling' | 'Incomplete' | 'Other';
+  confidence: number; // A score from 0 to 1
+  suggestedReply: GeneratedEmailContent;
+}

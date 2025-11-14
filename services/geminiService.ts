@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { EmailRequestData, GeneratedEmailContent, EmailStyle } from '../types';
+import type { EmailRequestData, GeneratedEmailContent, EmailStyle, EmailScanResult } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -27,6 +27,32 @@ const responseSchema = {
     required: ['subject', 'body']
   }
 };
+
+const scanResultSchema = {
+    type: Type.ARRAY,
+    items: {
+        type: Type.OBJECT,
+        properties: {
+            summary: { type: Type.STRING, description: "A brief, one-sentence summary of the email's content." },
+            intent: { 
+                type: Type.STRING, 
+                description: "The primary intent of the email. Must be one of: Confirmation, Rejection, Question, Scheduling, Incomplete, Other." 
+            },
+            confidence: { type: Type.NUMBER, description: "A confidence score from 0.0 to 1.0 for the detected intent." },
+            suggestedReply: {
+                type: Type.OBJECT,
+                properties: {
+                    subject: { type: Type.STRING, description: "A suitable subject line for the reply, often prefixed with 'Re:'." },
+                    body: { type: Type.STRING, description: "A context-aware, professionally drafted reply that directly addresses the original email's content." }
+                },
+                required: ['subject', 'body']
+            }
+        },
+        // FIX: Enclosed 'confidence' and 'suggestedReply' in quotes to treat them as string literals, resolving the 'Cannot find name' error.
+        required: ['summary', 'intent', 'confidence', 'suggestedReply']
+    }
+};
+
 
 const generateEmailWithSchema = async (prompt: string, style: EmailStyle): Promise<GeneratedEmailContent[]> => {
   const fullPrompt = `
@@ -139,5 +165,49 @@ export const generateEmail = async (formData: EmailRequestData): Promise<Generat
   } catch (error) {
     console.error("Error generating email with Gemini:", error);
     throw new Error("Failed to communicate with the AI model.");
+  }
+};
+
+
+export const scanEmail = async (subject: string, body: string): Promise<EmailScanResult[]> => {
+  const fullPrompt = `
+    You are an AI assistant that analyzes incoming emails and drafts smart replies.
+    Your task is to analyze the provided email and generate a JSON array with TWO distinct reply variations.
+
+    **Instructions:**
+    1.  Thoroughly analyze the email's subject and body.
+    2.  For BOTH variations, determine the summary, intent, and confidence. The summary, intent, and confidence should be identical for both objects in the array.
+    3.  The \`intent\` must be one of the following exact values: 'Confirmation', 'Rejection', 'Question', 'Scheduling', 'Incomplete', 'Other'.
+    4.  The \`confidence\` must be a number between 0.0 and 1.0.
+    5.  Draft two different \`suggestedReply\` variations. They should be context-aware and address the original email's content. For example, one could be more formal, the other more friendly.
+    6.  The entire output must be a valid JSON array conforming to the provided schema.
+
+    **Incoming Email to Analyze:**
+    - **Subject:** "${subject}"
+    - **Body:** "${body}"
+  `;
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: fullPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: scanResultSchema,
+        temperature: 0.7,
+      },
+    });
+
+    const jsonText = response.text.trim();
+    const scanResults: EmailScanResult[] = JSON.parse(jsonText);
+
+    if (!Array.isArray(scanResults) || scanResults.length === 0 || !scanResults[0].suggestedReply) {
+        throw new Error("Invalid response format from API for email scan.");
+    }
+    
+    return scanResults;
+  } catch (error) {
+    console.error("Error scanning email with Gemini:", error);
+    throw new Error("Failed to communicate with the AI model for scanning.");
   }
 };

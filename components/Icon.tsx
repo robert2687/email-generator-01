@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-export type IconName = 'mail' | 'external-link' | 'sparkles' | 'loader' | 'copy' | 'check' | 'refresh' | 'mail-document' | 'error' | 'microphone' | 'stop' | 'google' | 'edit-plus' | 'tie' | 'friendly-face' | 'bolt' | 'user' | 'lock' | 'eye' | 'eye-off' | 'sign-out' | 'briefcase' | 'clipboard' | 'edit' | 'save' | 'history' | 'archive' | 'trash' | 'gmail' | 'template';
+export type IconName = 'mail' | 'external-link' | 'sparkles' | 'loader' | 'copy' | 'check' | 'refresh' | 'mail-document' | 'error' | 'microphone' | 'stop' | 'google' | 'edit-plus' | 'tie' | 'friendly-face' | 'bolt' | 'user' | 'lock' | 'eye' | 'eye-off' | 'sign-out' | 'briefcase' | 'clipboard' | 'edit' | 'save' | 'history' | 'archive' | 'trash' | 'gmail' | 'template' | 'scan';
 
 interface IconProps {
   name: IconName;
@@ -165,6 +165,11 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'h-6 w-6' }) => {
        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
        </svg>
+    ),
+    scan: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m-6 3.75 3 3m0 0 3-3m-3 3V1.5m9 5.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V6.75m10.5-1.125a2.25 2.25 0 0 0-2.25-2.25h-3.75a2.25 2.25 0 0 0-2.25 2.25V6.75m10.5 0v-1.125c0-.621-.504-1.125-1.125-1.125H9.375c-.621 0-1.125.504-1.125 1.125v1.125m10.5 0h-10.5" />
+      </svg>
     ),
   };
 
