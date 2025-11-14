@@ -6,9 +6,10 @@ interface HeaderProps {
     isAuthenticated: boolean;
     onSignOut: () => void;
     onToggleHistory: () => void;
+    onToggleTemplates: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ isAuthenticated, onSignOut, onToggleHistory }) => {
+export const Header: React.FC<HeaderProps> = ({ isAuthenticated, onSignOut, onToggleHistory, onToggleTemplates }) => {
   return (
     <header className="bg-white dark:bg-slate-900/70 shadow-sm backdrop-blur-md sticky top-0 z-10">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
@@ -21,6 +22,13 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, onSignOut, onTo
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
+               <button
+                  onClick={onToggleTemplates}
+                  className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+               >
+                  <Icon name="template" className="h-5 w-5" />
+                  Templates
+               </button>
                <button
                   onClick={onToggleHistory}
                   className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"

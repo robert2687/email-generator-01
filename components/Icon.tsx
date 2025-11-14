@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-export type IconName = 'mail' | 'external-link' | 'sparkles' | 'loader' | 'copy' | 'check' | 'refresh' | 'mail-document' | 'error' | 'microphone' | 'stop' | 'google' | 'edit-plus' | 'tie' | 'friendly-face' | 'bolt' | 'user' | 'lock' | 'eye' | 'eye-off' | 'sign-out' | 'briefcase' | 'clipboard' | 'edit' | 'save' | 'history' | 'archive' | 'trash';
+export type IconName = 'mail' | 'external-link' | 'sparkles' | 'loader' | 'copy' | 'check' | 'refresh' | 'mail-document' | 'error' | 'microphone' | 'stop' | 'google' | 'edit-plus' | 'tie' | 'friendly-face' | 'bolt' | 'user' | 'lock' | 'eye' | 'eye-off' | 'sign-out' | 'briefcase' | 'clipboard' | 'edit' | 'save' | 'history' | 'archive' | 'trash' | 'gmail' | 'template';
 
 interface IconProps {
   name: IconName;
@@ -154,7 +154,18 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'h-6 w-6' }) => {
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
         <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
       </svg>
-    )
+    ),
+    gmail: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M22 5.88V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6c0-.3.1-.58.26-.82L12 12l9.74-6.82A2 2 0 0 1 22 5.88z"/>
+        <path d="M12 10.5L2.26 3.18A2 2 0 0 1 4 2h16a2 2 0 0 1 1.74 1.18L12 10.5z"/>
+      </svg>
+    ),
+    template: (
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+       </svg>
+    ),
   };
 
   return icons[name] || null;

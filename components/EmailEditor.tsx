@@ -1,27 +1,36 @@
+
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { STYLE_OPTIONS } from '../constants';
-import type { EmailRequestData, EmailStyle } from '../types';
+import type { EmailRequestData, EmailStyle, EmailTemplate } from '../types';
 import { Icon } from './Icon';
+import { SaveTemplateModal } from './SaveTemplateModal';
 
 interface EmailEditorProps {
   onGenerate: (formData: EmailRequestData) => void;
   isLoading: boolean;
+  templates: EmailTemplate[];
+  onAddTemplate: (name: string, prompt: string) => void;
 }
 
 export interface EmailEditorHandles {
   reset: () => void;
+  setPrompt: (text: string) => void;
 }
 
-export const EmailEditor = forwardRef<EmailEditorHandles, EmailEditorProps>(({ onGenerate, isLoading }, ref) => {
+export const EmailEditor = forwardRef<EmailEditorHandles, EmailEditorProps>(({ onGenerate, isLoading, templates, onAddTemplate }, ref) => {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState<EmailStyle>('Friendly');
   const [useSearch, setUseSearch] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
   useImperativeHandle(ref, () => ({
     reset: () => {
       setPrompt('');
       setStyle('Friendly');
       setUseSearch(false);
+    },
+    setPrompt: (text: string) => {
+      setPrompt(text);
     },
   }));
 
@@ -31,15 +40,60 @@ export const EmailEditor = forwardRef<EmailEditorHandles, EmailEditorProps>(({ o
     onGenerate({ prompt, style, useSearch });
   };
 
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const templateId = e.target.value;
+    const selectedTemplate = templates.find(t => t.id === templateId);
+    if (selectedTemplate) {
+      setPrompt(selectedTemplate.prompt);
+    } else if (templateId === "") {
+        setPrompt('');
+    }
+  };
+
   return (
+    <>
+    <SaveTemplateModal 
+      isOpen={isSaveModalOpen}
+      onClose={() => setIsSaveModalOpen(false)}
+      onSave={onAddTemplate}
+      currentPrompt={prompt}
+    />
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-white dark:bg-slate-800/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
         
-        {/* Prompt Input */}
+        {/* Templates */}
         <div>
-          <label htmlFor="prompt" className="block text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">
-            What kind of email do you need?
+          <label htmlFor="template-select" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Start from a template (optional)
           </label>
+          <select 
+            id="template-select"
+            onChange={handleTemplateChange}
+            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800 text-base"
+          >
+            <option value="">-- Select a template --</option>
+            {templates.map(template => (
+              <option key={template.id} value={template.id}>{template.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Prompt Input */}
+        <div className="mt-4">
+          <div className="flex justify-between items-center mb-2">
+            <label htmlFor="prompt" className="block text-lg font-semibold text-slate-800 dark:text-slate-100">
+              What kind of email do you need?
+            </label>
+            <button
+              type="button"
+              onClick={() => setIsSaveModalOpen(true)}
+              disabled={!prompt.trim()}
+              className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Icon name="save" className="h-3 w-3" />
+              Save as template
+            </button>
+          </div>
           <textarea
             id="prompt"
             value={prompt}
@@ -114,5 +168,6 @@ export const EmailEditor = forwardRef<EmailEditorHandles, EmailEditorProps>(({ o
         )}
       </button>
     </form>
+    </>
   );
 });

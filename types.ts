@@ -22,3 +22,9 @@ export type TranscriptEntry = {
   speaker: 'user' | 'model';
   text: string;
 };
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  prompt: string;
+}

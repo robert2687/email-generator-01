@@ -4,34 +4,56 @@ import { EmailEditor, EmailEditorHandles } from './components/EmailEditor';
 import { GeneratedEmail } from './components/GeneratedEmail';
 import { Header } from './components/Header';
 import { VoiceComposer } from './components/VoiceComposer';
-import type { GeneratedEmailContent, EmailRequestData, EmailStyle } from './types';
+import type { GeneratedEmailContent, EmailRequestData, EmailStyle, EmailTemplate } from './types';
 import { generateEmail } from './services/geminiService';
 import { Icon } from './components/Icon';
 import { AuthPage } from './components/auth/AuthPage';
 import { HistoryPanel } from './components/HistoryPanel';
+import { TemplatesPanel } from './components/TemplatesPanel';
 
 type AppMode = 'text' | 'voice';
+
+const defaultTemplates: EmailTemplate[] = [
+  { id: 'default-1', name: 'Team Thank You', prompt: 'Write a thank you email to my team for their hard work on [Project Name]. Mention their dedication and the successful outcome.' },
+  { id: 'default-2', name: 'Meeting Follow-Up', prompt: 'Write a follow-up email after a meeting about [Topic]. Summarize the key discussion points, list the action items with owners and deadlines, and state the next steps.' },
+  { id: 'default-3', name: 'New Client Introduction', prompt: 'Write an introductory email to a new client, [Client Name]. Welcome them, briefly reiterate our value proposition, and outline the next steps for onboarding.' },
+];
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mode, setMode] = useState<AppMode>('text');
-  const [generatedEmail, setGeneratedEmail] = useState<GeneratedEmailContent | null>(null);
+  const [generatedEmails, setGeneratedEmails] = useState<GeneratedEmailContent[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<EmailRequestData | null>(null);
+  
   const [history, setHistory] = useState<GeneratedEmailContent[]>([]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+
   const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
+  const [isTemplatesPanelOpen, setIsTemplatesPanelOpen] = useState(false);
+  
   const emailEditorRef = useRef<EmailEditorHandles>(null);
 
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('emailHistory');
-      if (savedHistory) {
-        setHistory(JSON.parse(savedHistory));
-      }
+      if (savedHistory) setHistory(JSON.parse(savedHistory));
     } catch (e) {
       console.error("Failed to load history from localStorage", e);
     }
+    
+    try {
+        const savedTemplates = localStorage.getItem('emailTemplates');
+        if (savedTemplates) {
+          setTemplates(JSON.parse(savedTemplates));
+        } else {
+          setTemplates(defaultTemplates);
+        }
+      } catch (e) {
+        console.error("Failed to load templates from localStorage", e);
+        setTemplates(defaultTemplates);
+      }
   }, []);
 
   useEffect(() => {
@@ -41,6 +63,14 @@ const App: React.FC = () => {
       console.error("Failed to save history to localStorage", e);
     }
   }, [history]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem('emailTemplates', JSON.stringify(templates));
+    } catch (e) {
+      console.error("Failed to save templates to localStorage", e);
+    }
+  }, [templates]);
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
@@ -49,22 +79,24 @@ const App: React.FC = () => {
   const handleSignOut = () => {
     setIsAuthenticated(false);
     // Reset app state on sign out
-    setGeneratedEmail(null);
+    setGeneratedEmails(null);
     setError(null);
     setLastRequest(null);
     setMode('text');
     setHistory([]);
+    setTemplates(defaultTemplates);
     setIsHistoryPanelOpen(false);
+    setIsTemplatesPanelOpen(false);
   };
 
   const handleGenerateEmail = useCallback(async (formData: EmailRequestData) => {
     setIsLoading(true);
     setError(null);
-    setGeneratedEmail(null);
+    setGeneratedEmails(null);
     setLastRequest(formData); // Save the last request
     try {
       const result = await generateEmail(formData);
-      setGeneratedEmail(result);
+      setGeneratedEmails(result);
     } catch (e) {
       console.error(e);
       setError('Failed to generate email. Please check your prompt and try again.');
@@ -80,13 +112,13 @@ const App: React.FC = () => {
     }, [lastRequest, handleGenerateEmail]);
 
   const handleEmailGeneratedFromVoice = useCallback((content: GeneratedEmailContent) => {
-    setGeneratedEmail(content);
+    setGeneratedEmails([content]); // Wrap in an array to fit the new data structure
     setMode('text'); // Switch back to text view to see the result
   }, []);
 
 
   const handleNewEmail = useCallback(() => {
-    setGeneratedEmail(null);
+    setGeneratedEmails(null);
     setError(null);
     setLastRequest(null);
     emailEditorRef.current?.reset();
@@ -102,12 +134,30 @@ const App: React.FC = () => {
   };
 
   const handleLoadFromHistory = (email: GeneratedEmailContent) => {
-    setGeneratedEmail(email);
+    setGeneratedEmails([email]); // Wrap in array to display it
     setIsHistoryPanelOpen(false);
   };
   
   const handleDeleteFromHistory = (id: string) => {
     setHistory(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleAddTemplate = (name: string, prompt: string) => {
+    const newTemplate: EmailTemplate = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name,
+      prompt,
+    };
+    setTemplates(prev => [newTemplate, ...prev]);
+  };
+  
+  const handleDeleteTemplate = (id: string) => {
+    setTemplates(prev => prev.filter(t => t.id !== id));
+  };
+  
+  const handleLoadFromTemplate = (template: EmailTemplate) => {
+    emailEditorRef.current?.setPrompt(template.prompt);
+    setIsTemplatesPanelOpen(false);
   };
 
 
@@ -129,6 +179,7 @@ const App: React.FC = () => {
         isAuthenticated={isAuthenticated} 
         onSignOut={handleSignOut}
         onToggleHistory={() => setIsHistoryPanelOpen(prev => !prev)}
+        onToggleTemplates={() => setIsTemplatesPanelOpen(prev => !prev)}
       />
       <HistoryPanel
         isOpen={isHistoryPanelOpen}
@@ -136,6 +187,13 @@ const App: React.FC = () => {
         history={history}
         onLoad={handleLoadFromHistory}
         onDelete={handleDeleteFromHistory}
+      />
+      <TemplatesPanel
+        isOpen={isTemplatesPanelOpen}
+        onClose={() => setIsTemplatesPanelOpen(false)}
+        templates={templates}
+        onLoad={handleLoadFromTemplate}
+        onDelete={handleDeleteTemplate}
       />
 
       <main className="container mx-auto p-4 md:p-6 lg:p-8 max-w-3xl">
@@ -158,9 +216,15 @@ const App: React.FC = () => {
           
           {mode === 'text' ? (
             <>
-              <EmailEditor ref={emailEditorRef} onGenerate={handleGenerateEmail} isLoading={isLoading} />
+              <EmailEditor 
+                ref={emailEditorRef} 
+                onGenerate={handleGenerateEmail} 
+                isLoading={isLoading}
+                templates={templates}
+                onAddTemplate={handleAddTemplate}
+              />
               <GeneratedEmail
-                content={generatedEmail}
+                contents={generatedEmails}
                 isLoading={isLoading}
                 error={error}
                 onNewEmail={handleNewEmail}

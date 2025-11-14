@@ -11,29 +11,33 @@ if (!API_KEY) {
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const responseSchema = {
-  type: Type.OBJECT,
-  properties: {
-    subject: {
-      type: Type.STRING,
-      description: "A compelling, concise, and optimized subject line for the email."
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      subject: {
+        type: Type.STRING,
+        description: "A compelling, concise, and optimized subject line for the email."
+      },
+      body: {
+        type: Type.STRING,
+        description: "The full body of the email, formatted professionally with paragraphs and a clear sign-off. Do not include a placeholder for the sender's name."
+      }
     },
-    body: {
-      type: Type.STRING,
-      description: "The full body of the email, formatted professionally with paragraphs and a clear sign-off. Do not include a placeholder for the sender's name."
-    }
-  },
-  required: ['subject', 'body']
+    required: ['subject', 'body']
+  }
 };
 
-const generateEmailWithSchema = async (prompt: string, style: EmailStyle): Promise<GeneratedEmailContent> => {
+const generateEmailWithSchema = async (prompt: string, style: EmailStyle): Promise<GeneratedEmailContent[]> => {
   const fullPrompt = `
-    You are an expert email copywriter. Your task is to generate a professional, ready-to-send email based on a user's request.
+    You are an expert email copywriter. Your task is to generate TWO distinct professional, ready-to-send email variations based on a user's request.
 
     **Instructions:**
-    1.  Generate a JSON object that strictly adheres to the provided schema.
-    2.  The subject line should be clear and engaging.
-    3.  The email body must be well-structured, starting with an appropriate greeting, communicating the core message, and ending with a professional closing.
-    4.  Adhere strictly to the specified style.
+    1.  Generate a JSON array containing exactly two email objects. Each object must strictly adhere to the provided schema.
+    2.  The two variations should explore different angles or tones while fulfilling the same core request. For example, one could be more direct and concise, while the other is more descriptive and friendly.
+    3.  Each variation must have a clear and engaging subject line.
+    4.  Each email body must be well-structured, starting with an appropriate greeting, communicating the core message, and ending with a professional closing.
+    5.  Adhere strictly to the specified style for BOTH variations, but interpret it slightly differently for each to create variety.
 
     **Email Details:**
     - **User's Request:** "${prompt}"
@@ -51,26 +55,26 @@ const generateEmailWithSchema = async (prompt: string, style: EmailStyle): Promi
   });
 
   const jsonText = response.text.trim();
-  const generatedContent: GeneratedEmailContent = JSON.parse(jsonText);
+  const generatedContent: GeneratedEmailContent[] = JSON.parse(jsonText);
   
-  if (!generatedContent.subject || !generatedContent.body) {
+  if (!Array.isArray(generatedContent) || generatedContent.length === 0 || !generatedContent[0].subject || !generatedContent[0].body) {
       throw new Error("Invalid response format from API.");
   }
 
   return generatedContent;
 };
 
-const generateEmailWithSearch = async (prompt: string, style: EmailStyle): Promise<GeneratedEmailContent> => {
+const generateEmailWithSearch = async (prompt: string, style: EmailStyle): Promise<GeneratedEmailContent[]> => {
   const fullPrompt = `
-    You are an expert email copywriter. Your task is to generate a professional, ready-to-send email based on a user's request, using Google Search to find up-to-date information if needed.
+    You are an expert email copywriter. Your task is to generate TWO distinct professional, ready-to-send email variations based on a user's request, using Google Search to find up-to-date information if needed.
 
     **Instructions:**
-    1.  Format your response with the subject on one line and the body on a new line, like this:
+    1.  Format your response with each variation clearly separated. Use "---VARIATION 1---" and "---VARIATION 2---" as separators.
+    2.  For each variation, provide the subject on one line and the body on a new line, like this:
         Subject: [Your Subject Here]
         Body: [Your Email Body Here]
-    2.  The subject line should be clear and engaging.
-    3.  The email body must be well-structured, starting with an appropriate greeting, communicating the core message, and ending with a professional closing.
-    4.  Adhere strictly to the specified style.
+    3.  The two variations should explore different angles or tones.
+    4.  Adhere strictly to the specified style for BOTH variations.
 
     **Email Details:**
     - **User's Request:** "${prompt}"
@@ -88,14 +92,6 @@ const generateEmailWithSearch = async (prompt: string, style: EmailStyle): Promi
 
   const text = response.text;
   
-  // Basic parsing to extract subject and body
-  const subjectMatch = text.match(/^Subject:\s*(.*)/m);
-  const bodyMatch = text.match(/\nBody:\s*([\s\S]*)/m);
-
-  const subject = subjectMatch ? subjectMatch[1].trim() : "Subject Not Generated";
-  const body = bodyMatch ? bodyMatch[1].trim() : text.replace(/^Subject:\s*(.*)/m, '').trim();
-
-  // FIX: Replaced reduce with forEach to resolve a TypeScript type inference error when processing grounding chunks.
   const sources: { uri: string; title: string }[] = [];
   response.candidates?.[0]?.groundingMetadata?.groundingChunks?.forEach(
     (chunk) => {
@@ -104,13 +100,35 @@ const generateEmailWithSearch = async (prompt: string, style: EmailStyle): Promi
       }
     }
   );
-  
   const uniqueSources = Array.from(new Map(sources.map(item => [item.uri, item])).values());
+  const sourcesProp = { sources: uniqueSources.length > 0 ? uniqueSources : undefined };
 
-  return { subject, body, sources: uniqueSources.length > 0 ? uniqueSources : undefined };
+  const variations = text.split(/---\s*VARIATION\s*\d+\s*---/i).filter(v => v.trim());
+
+  if (variations.length < 2) {
+    const subjectMatch = text.match(/^Subject:\s*(.*)/m);
+    const bodyMatch = text.match(/\nBody:\s*([\s\S]*)/m);
+    const subject = subjectMatch ? subjectMatch[1].trim() : "Subject Not Generated";
+    const body = bodyMatch ? bodyMatch[1].trim() : text.replace(/^Subject:\s*(.*)/m, '').trim();
+    return [{ subject, body, ...sourcesProp }];
+  }
+
+  const emails: GeneratedEmailContent[] = variations.map(variationText => {
+    const subjectMatch = variationText.match(/^Subject:\s*(.*)/m);
+    const bodyMatch = variationText.match(/\nBody:\s*([\s\S]*)/m);
+    const subject = subjectMatch ? subjectMatch[1].trim() : "Subject Not Generated";
+    const body = bodyMatch ? bodyMatch[1].trim() : variationText.replace(/^Subject:\s*(.*)/m, '').trim();
+    return { subject, body, ...sourcesProp };
+  }).filter(e => e.subject !== "Subject Not Generated" || e.body.length > 0);
+  
+  if (emails.length === 0) {
+      throw new Error("Failed to parse email variations from API response.");
+  }
+
+  return emails;
 };
 
-export const generateEmail = async (formData: EmailRequestData): Promise<GeneratedEmailContent> => {
+export const generateEmail = async (formData: EmailRequestData): Promise<GeneratedEmailContent[]> => {
   const { prompt, style, useSearch } = formData;
   try {
     if (useSearch) {
