@@ -85,7 +85,7 @@ export const GeneratedEmail: React.FC<GeneratedEmailProps> = ({ contents, isLoad
       return (
         <div className="flex flex-col h-full">
           {contents.length > 1 && (
-             <div className="flex border-b border-slate-200 dark:border-slate-700 -mx-6 px-4">
+             <div className="flex border-b border-slate-200 dark:border-slate-700 -mx-4 px-2 sm:-mx-6 sm:px-4">
                {contents.map((_, index) => (
                    <button key={index} onClick={() => setSelectedVariation(index)} className={getTabClass(index)}>
                        Variation {index + 1}
@@ -254,7 +254,7 @@ export const GeneratedEmail: React.FC<GeneratedEmailProps> = ({ contents, isLoad
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[500px] flex flex-col justify-center">
+    <div className="bg-white dark:bg-slate-800/50 p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[500px] flex flex-col justify-center">
       {renderContent()}
     </div>
   );

@@ -224,7 +224,7 @@ const App: React.FC = () => {
         onDelete={handleDeleteTemplate}
       />
 
-      <main className="container mx-auto p-4 md:p-6 lg:p-8 max-w-3xl">
+      <main className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-3xl">
         <div className="flex flex-col gap-8">
           
           <div className="flex justify-center mb-4">
