@@ -3,11 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Professional Email Generator</title>
     <meta name="theme-color" content="#f8fafc">
     <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Mobile UX enhancements */
+      body {
+        -webkit-tap-highlight-color: transparent;
+      }
+      button, a {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      /* Safe Area Insets for iOS notches and dynamic island */
+      :root {
+          --safe-area-inset-top: env(safe-area-inset-top, 0px);
+          --safe-area-inset-right: env(safe-area-inset-right, 0px);
+          --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+          --safe-area-inset-left: env(safe-area-inset-left, 0px);
+      }
+      body {
+        padding-bottom: var(--safe-area-inset-bottom);
+        padding-left: var(--safe-area-inset-left);
+        padding-right: var(--safe-area-inset-right);
+      }
+      /* The header is sticky, so it needs top padding to avoid the notch */
+      header.sticky {
+        padding-top: var(--safe-area-inset-top);
+      }
+      /* The side panels are fixed and full-screen on mobile, they need padding too */
+      .full-screen-panel-inner {
+          padding-top: var(--safe-area-inset-top);
+      }
+    </style>
   <script type="importmap">
 {
   "imports": {

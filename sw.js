@@ -3,6 +3,8 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
+  '/index.tsx',
+  '/vite.svg',
   // Note: The main script and dependencies are loaded via importmap,
   // the browser will cache them based on HTTP headers.
   // We are caching the main entry points for offline access.

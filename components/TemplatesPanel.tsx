@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { EmailTemplate } from '../types';
 import { Icon } from './Icon';
@@ -28,7 +27,7 @@ export const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ isOpen, onClose,
         aria-modal="true"
         aria-labelledby="templates-panel-title"
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full full-screen-panel-inner">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
             <h2 id="templates-panel-title" className="text-lg font-semibold flex items-center gap-2">

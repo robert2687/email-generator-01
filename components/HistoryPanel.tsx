@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { GeneratedEmailContent } from '../types';
 import { Icon } from './Icon';
@@ -28,7 +27,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, his
         aria-modal="true"
         aria-labelledby="history-panel-title"
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full full-screen-panel-inner">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
             <h2 id="history-panel-title" className="text-lg font-semibold flex items-center gap-2">
