@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import type { GeneratedEmailContent, EmailStyle } from '../types';
 import { Icon } from './Icon';
 import { STYLE_OPTIONS } from '../constants';
@@ -9,20 +10,47 @@ interface GeneratedEmailProps {
   error: string | null;
   onNewEmail: () => void;
   onRegenerate: (newStyle: EmailStyle) => void;
+  onSave: (content: GeneratedEmailContent) => void;
   currentStyle?: EmailStyle;
 }
 
-export const GeneratedEmail: React.FC<GeneratedEmailProps> = ({ content, isLoading, error, onNewEmail, onRegenerate, currentStyle }) => {
+export const GeneratedEmail: React.FC<GeneratedEmailProps> = ({ content, isLoading, error, onNewEmail, onRegenerate, onSave, currentStyle }) => {
   const [hasCopied, setHasCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedSubject, setEditedSubject] = useState('');
+  const [editedBody, setEditedBody] = useState('');
+  const [hasSaved, setHasSaved] = useState(false);
+
+
+  useEffect(() => {
+    if (content) {
+      setEditedSubject(content.subject);
+      setEditedBody(content.body);
+      setIsEditing(false); // Reset to view mode when new content arrives
+      setHasSaved(false); // Reset save state for new content
+    }
+  }, [content]);
+
 
   const handleCopy = () => {
     if (!content) return;
-    const fullEmailText = `Subject: ${content.subject}\n\n${content.body}`;
+    const fullEmailText = `Subject: ${editedSubject}\n\n${editedBody}`;
     navigator.clipboard.writeText(fullEmailText);
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
   };
   
+  const handleSave = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveToHistory = () => {
+    if (!content) return;
+    onSave({ ...content, subject: editedSubject, body: editedBody });
+    setHasSaved(true);
+    setTimeout(() => setHasSaved(false), 2500); // Reset after a while
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return <LoadingState />;
@@ -36,17 +64,37 @@ export const GeneratedEmail: React.FC<GeneratedEmailProps> = ({ content, isLoadi
           {/* Email Content */}
           <div>
             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">Subject</h3>
-            <p className="w-full p-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg">
-              {content.subject}
-            </p>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editedSubject}
+                onChange={(e) => setEditedSubject(e.target.value)}
+                className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                aria-label="Email subject"
+              />
+            ) : (
+              <p className="w-full p-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+                {editedSubject}
+              </p>
+            )}
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">Body</h3>
-            <div 
-              className="w-full p-3 h-64 overflow-y-auto bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg leading-relaxed whitespace-pre-wrap"
-            >
-              {content.body}
-            </div>
+             {isEditing ? (
+              <textarea
+                value={editedBody}
+                onChange={(e) => setEditedBody(e.target.value)}
+                rows={10}
+                className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 leading-relaxed"
+                aria-label="Email body"
+              />
+            ) : (
+              <div 
+                className="w-full p-3 h-64 overflow-y-auto bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg leading-relaxed whitespace-pre-wrap"
+              >
+                {editedBody}
+              </div>
+            )}
           </div>
           
           {/* Sources */}
@@ -104,6 +152,40 @@ export const GeneratedEmail: React.FC<GeneratedEmailProps> = ({ content, isLoadi
                 <Icon name="edit-plus" className="h-5 w-5" />
                 New Email
             </button>
+            <button
+              onClick={handleSaveToHistory}
+              disabled={hasSaved}
+              className="flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 dark:focus:ring-offset-slate-900 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {hasSaved ? (
+                 <>
+                  <Icon name="check" className="h-5 w-5 text-green-500" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Icon name="archive" className="h-5 w-5" />
+                  Save to History
+                </>
+              )}
+            </button>
+            {isEditing ? (
+               <button
+                onClick={handleSave}
+                className="flex items-center justify-center gap-2 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-slate-900 transition-colors"
+                >
+                <Icon name="save" className="h-5 w-5" />
+                Save Changes
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 dark:focus:ring-offset-slate-900 transition-colors"
+                >
+                <Icon name="edit" className="h-5 w-5" />
+                Edit
+              </button>
+            )}
             <button
               onClick={handleCopy}
               className="flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"

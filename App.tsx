@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { EmailEditor, EmailEditorHandles } from './components/EmailEditor';
 import { GeneratedEmail } from './components/GeneratedEmail';
 import { Header } from './components/Header';
@@ -8,6 +8,7 @@ import type { GeneratedEmailContent, EmailRequestData, EmailStyle } from './type
 import { generateEmail } from './services/geminiService';
 import { Icon } from './components/Icon';
 import { AuthPage } from './components/auth/AuthPage';
+import { HistoryPanel } from './components/HistoryPanel';
 
 type AppMode = 'text' | 'voice';
 
@@ -18,7 +19,28 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<EmailRequestData | null>(null);
+  const [history, setHistory] = useState<GeneratedEmailContent[]>([]);
+  const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
   const emailEditorRef = useRef<EmailEditorHandles>(null);
+
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('emailHistory');
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
+    } catch (e) {
+      console.error("Failed to load history from localStorage", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('emailHistory', JSON.stringify(history));
+    } catch (e) {
+      console.error("Failed to save history to localStorage", e);
+    }
+  }, [history]);
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
@@ -31,6 +53,8 @@ const App: React.FC = () => {
     setError(null);
     setLastRequest(null);
     setMode('text');
+    setHistory([]);
+    setIsHistoryPanelOpen(false);
   };
 
   const handleGenerateEmail = useCallback(async (formData: EmailRequestData) => {
@@ -68,6 +92,25 @@ const App: React.FC = () => {
     emailEditorRef.current?.reset();
   }, []);
 
+  const handleSaveToHistory = (email: GeneratedEmailContent) => {
+    const newHistoryEntry = {
+      ...email,
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: Date.now(),
+    };
+    setHistory(prev => [newHistoryEntry, ...prev]);
+  };
+
+  const handleLoadFromHistory = (email: GeneratedEmailContent) => {
+    setGeneratedEmail(email);
+    setIsHistoryPanelOpen(false);
+  };
+  
+  const handleDeleteFromHistory = (id: string) => {
+    setHistory(prev => prev.filter(item => item.id !== id));
+  };
+
+
   const getModeButtonClass = (buttonMode: AppMode) => {
     const baseClasses = "px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800";
     if (mode === buttonMode) {
@@ -82,7 +125,19 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen font-sans text-slate-800 dark:text-slate-200">
-      <Header isAuthenticated={isAuthenticated} onSignOut={handleSignOut} />
+      <Header 
+        isAuthenticated={isAuthenticated} 
+        onSignOut={handleSignOut}
+        onToggleHistory={() => setIsHistoryPanelOpen(prev => !prev)}
+      />
+      <HistoryPanel
+        isOpen={isHistoryPanelOpen}
+        onClose={() => setIsHistoryPanelOpen(false)}
+        history={history}
+        onLoad={handleLoadFromHistory}
+        onDelete={handleDeleteFromHistory}
+      />
+
       <main className="container mx-auto p-4 md:p-6 lg:p-8 max-w-3xl">
         <div className="flex flex-col gap-8">
           
@@ -110,6 +165,7 @@ const App: React.FC = () => {
                 error={error}
                 onNewEmail={handleNewEmail}
                 onRegenerate={handleRegenerateWithStyle}
+                onSave={handleSaveToHistory}
                 currentStyle={lastRequest?.style}
               />
             </>

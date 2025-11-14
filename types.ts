@@ -8,6 +8,8 @@ export interface EmailRequestData {
 }
 
 export interface GeneratedEmailContent {
+  id?: string; // Optional: for items in history
+  timestamp?: number; // Optional: for items in history
   subject: string;
   body: string;
   sources?: {

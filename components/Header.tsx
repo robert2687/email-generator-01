@@ -5,9 +5,10 @@ import { Icon } from './Icon';
 interface HeaderProps {
     isAuthenticated: boolean;
     onSignOut: () => void;
+    onToggleHistory: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ isAuthenticated, onSignOut }) => {
+export const Header: React.FC<HeaderProps> = ({ isAuthenticated, onSignOut, onToggleHistory }) => {
   return (
     <header className="bg-white dark:bg-slate-900/70 shadow-sm backdrop-blur-md sticky top-0 z-10">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
@@ -19,13 +20,22 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, onSignOut }) =>
             </h1>
           </div>
           {isAuthenticated ? (
-             <button
-                onClick={onSignOut}
-                className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-             >
-                <Icon name="sign-out" className="h-5 w-5" />
-                Sign Out
-             </button>
+            <div className="flex items-center gap-4">
+               <button
+                  onClick={onToggleHistory}
+                  className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+               >
+                  <Icon name="history" className="h-5 w-5" />
+                  History
+               </button>
+               <button
+                  onClick={onSignOut}
+                  className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+               >
+                  <Icon name="sign-out" className="h-5 w-5" />
+                  Sign Out
+               </button>
+            </div>
           ) : (
              <a
                 href="https://ai.google.dev"
